@@ -1,0 +1,69 @@
+USE SIS04T25;
+ 
+DELIMITER //
+DROP PROCEDURE IF EXISTS sp_Customers //
+CREATE PROCEDURE sp_Customers()
+BEGIN
+    SELECT
+        c.CustomerID AS 'ID do Cliente',
+        c.CustomerName AS 'Nome do Cliente',
+        c.City AS Cidade,
+        c.Country AS País,
+        COUNT(DISTINCT o.OrderID) AS TotalPedidos,
+        COALESCE(SUM(od.Quantity), 0) AS TotalItensComprados
+    FROM Customers c
+    LEFT JOIN Orders o ON o.CustomerID = c.CustomerID
+    LEFT JOIN OrderDetails od ON od.OrderID = o.OrderID
+    GROUP BY c.CustomerID, c.CustomerName, c.City, c.Country
+    ORDER BY TotalPedidos DESC;
+END //
+
+DELIMITER ;
+
+CALL sp_Customers();
+
+DELIMITER //
+DROP PROCEDURE IF EXISTS sp_Categories //
+CREATE PROCEDURE sp_Categories()
+BEGIN
+    SELECT
+        cat.CategoryID AS 'ID da Categoria',
+        cat.CategoryName AS 'Nome da Categoria',
+        cat.Description AS 'Descrição',
+        COUNT(p.ProductID) AS QuantidadeProdutos,
+        ROUND(AVG(p.Price), 2) AS PrecoMedio
+    FROM Categories cat
+    LEFT JOIN Products p ON p.CategoryID = cat.CategoryID
+    GROUP BY cat.CategoryID, cat.CategoryName, cat.Description
+    ORDER BY QuantidadeProdutos DESC;
+END //
+
+DELIMITER ;
+
+CALL sp_Categories
+
+DELIMITER //
+DROP PROCEDURE IF EXISTS sp_Employees //
+CREATE PROCEDURE sp_Employees()
+BEGIN
+    SELECT
+        e.EmployeeID,
+        CONCAT(e.FirstName, ' ', e.LastName) AS Funcionário,
+        COUNT(o.OrderID) AS PedidosAtendidos,
+        MAX(o.OrderDate) AS 'Data do Ultimo Pedido',
+        (SELECT c2.CustomerName
+         FROM Orders o2
+         JOIN Customers c2 ON c2.CustomerID = o2.CustomerID
+         WHERE o2.EmployeeID = e.EmployeeID
+         ORDER BY o2.OrderDate DESC
+         LIMIT 1) AS 'Cliente do Ultimo Pedido'
+	FROM Employees e
+    LEFT JOIN Orders o ON o.EmployeeID = e.EmployeeID
+    GROUP BY e.EmployeeID, e.FirstName, e.LastName
+    ORDER BY PedidosAtendidos DESC;
+END //
+
+DELIMITER ;
+
+CALL sp_Employees();
+       
